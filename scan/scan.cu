@@ -27,6 +27,27 @@ static inline int nextPow2(int n) {
     return n;
 }
 
+__global__
+void upsweep(int* input, int N, int two_d, int two_dplus1) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= N) return;
+
+    int k = index * two_dplus1;
+    input[k + two_dplus1 - 1] += input[k + two_d - 1];
+}
+
+__global__
+void downsweep(int* input, int N, int two_d, int two_dplus1) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= N) return;
+
+    int k = index * two_dplus1;
+    int t = input[k + two_d - 1];
+    input[k + two_d - 1] = input[k + two_dplus1 - 1];
+    input[k + two_dplus1 - 1] += t;
+}
+
+
 // exclusive_scan --
 //
 // Implementation of an exclusive scan on global memory array `input`,
@@ -79,27 +100,6 @@ void exclusive_scan(int* input, int N, int* result)
     // copy the result to the output
     cudaMemcpy(result, input, N * sizeof(int), cudaMemcpyDeviceToDevice);
 }
-
-__global__
-void upsweep(int* input, int N, int two_d, int two_dplus1) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= N) return;
-
-    int k = index * two_dplus1;
-    input[k + two_dplus1 - 1] += input[k + two_d - 1];
-}
-
-__global__
-void downsweep(int* input, int N, int two_d, int two_dplus1) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= N) return;
-
-    int k = index * two_dplus1;
-    int t = input[k + two_d - 1];
-    input[k + two_d - 1] = input[k + two_dplus1 - 1];
-    input[k + two_dplus1 - 1] += t;
-}
-
 
 //
 // cudaScan --
