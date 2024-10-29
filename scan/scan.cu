@@ -53,8 +53,51 @@ void exclusive_scan(int* input, int N, int* result)
     // on the CPU.  Your implementation will need to make multiple calls
     // to CUDA kernel functions (that you must write) to implement the
     // scan.
+    
+    // upsweep phase
+    for (int two_d = 1; two_d <= N/2; two_d *= 2) {
+        int two_dplus1 = two_d * 2;
+        // luanch one CUDA thread for each iteration for the inner loop
+        int num_threads = (N + two_dplus1 - 1) / two_dplus1;
+        int num_blocks = (num_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+        upsweep<<<num_blocks, THREADS_PER_BLOCK>>>(input, num_threads, two_d, two_dplus1);
+    }
 
+    // set the last element to 0
+    int zero = 0;
+    cudaMemcpy(input + N - 1, &zero, sizeof(int), cudaMemcpyHostToDevice);
 
+    // downsweep phase
+    for (int two_d = N/2; two_d >= 1; two_d /= 2) {
+        int two_dplus1 = two_d * 2;
+        // launch one CUDA thread for each iteration for the inner loop
+        int num_threads = (N + two_dplus1 - 1) / two_dplus1;
+        int num_blocks = (num_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+        downsweep<<<num_blocks, THREADS_PER_BLOCK>>>(input, num_threads, two_d, two_dplus1);
+    }
+
+    // copy the result to the output
+    cudaMemcpy(result, input, N * sizeof(int), cudaMemcpyDeviceToDevice);
+}
+
+__global__
+void upsweep(int* input, int N, int two_d, int two_dplus1) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= N) return;
+
+    int k = index * two_dplus1;
+    input[k + two_dplus1 - 1] += input[k + two_d - 1];
+}
+
+__global__
+void downsweep(int* input, int N, int two_d, int two_dplus1) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= N) return;
+
+    int k = index * two_dplus1;
+    int t = input[k + two_d - 1];
+    input[k + two_d - 1] = input[k + two_dplus1 - 1];
+    input[k + two_dplus1 - 1] += t;
 }
 
 
