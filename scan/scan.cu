@@ -91,9 +91,9 @@ void exclusive_scan(int* input, int N, int* result)
         upsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
         cudaDeviceSynchronize();
     }
-    
+    printf("done upsweep 1\n");
     result[N-1] = 0;
-    printf("done upsweep\n");
+    printf("done upsweep 2\n");
     // downsweep phase
     for (int two_d = N/2; two_d >= 1; two_d /= 2) {
         number_of_threads = N / (2 * two_d);
