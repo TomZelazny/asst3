@@ -93,7 +93,7 @@ void exclusive_scan(int* input, int N, int* result)
     }
     
     result[N-1] = 0;
-
+    printf("done upsweep\n");
     // downsweep phase
     for (int two_d = N/2; two_d >= 1; two_d /= 2) {
         number_of_threads = N / (2 * two_d);
