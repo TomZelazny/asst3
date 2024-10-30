@@ -30,21 +30,31 @@ static inline int nextPow2(int n) {
 __global__
 void upsweep_kernel(int* input, int N, int two_d, int two_dplus1) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= N) return;
+    long long k = (long long)index * (long long)two_dplus1;
 
-    int k = index * two_dplus1;
-    input[k + two_dplus1 - 1] += input[k + two_d - 1];
+    if (k >= N) return;
+
+    long long idx1 = k + two_d - 1;
+    long long idx2 = k + two_dplus1 - 1;
+    if (idx1 < N && idx2 < N) {
+        input[idx2] += input[idx1];
+    }
 }
 
 __global__
 void downsweep_kernel(int* input, int N, int two_d, int two_dplus1) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= N) return;
-
-    int k = index * two_dplus1;
-    int t = input[k + two_d - 1];
-    input[k + two_d - 1] = input[k + two_dplus1 - 1];
-    input[k + two_dplus1 - 1] += t;
+    long long k = (long long)index * (long long)two_dplus1;
+    
+    if (k >= N) return;
+    
+    long long idx1 = k + two_d - 1;
+    long long idx2 = k + two_dplus1 - 1;
+    if (idx1 < N && idx2 < N) {
+        int t = input[idx1];
+        input[idx1] = input[idx2];
+        input[idx2] += t;
+    }
 }
 
 
@@ -74,27 +84,42 @@ void exclusive_scan(int* input, int N, int* result)
     // on the CPU.  Your implementation will need to make multiple calls
     // to CUDA kernel functions (that you must write) to implement the
     // scan.
+
+    int rounded_length = nextPow2(N);
+
+    if (rounded_length > N) {
+        cudaMemset(input + N, 0, (rounded_length - N) * sizeof(int));
+    }
     
     // upsweep phase
-    for (int two_d = 1; two_d <= N/2; two_d *= 2) {
+    for (int two_d = 1; two_d < rounded_length; two_d *= 2) {
         int two_dplus1 = two_d * 2;
         // luanch one CUDA thread for each iteration for the inner loop
-        int num_threads = (N + two_dplus1 - 1) / two_dplus1;
-        int num_blocks = (num_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-        upsweep_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(input, num_threads, two_d, two_dplus1);
+        long long elements_to_process = (rounded_length + two_dplus1 - 1LL) / two_dplus1;
+        int num_blocks = (int)((elements_to_process + THREADS_PER_BLOCK - 1LL) / THREADS_PER_BLOCK);
+        upsweep_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(input, rounded_length, two_d, two_dplus1);
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            printf("CUDA Error in upsweep_kernel: %s\n", cudaGetErrorString(err));
+        }
+        cudaDeviceSynchronize();
     }
 
     // set the last element to 0
-    int zero = 0;
-    cudaMemcpy(input + N - 1, &zero, sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemset(input + rounded_length - 1, 0, sizeof(int));
 
     // downsweep phase
-    for (int two_d = N/2; two_d >= 1; two_d /= 2) {
+    for (int two_d = rounded_length/2; two_d >= 1; two_d /= 2) {
         int two_dplus1 = two_d * 2;
         // launch one CUDA thread for each iteration for the inner loop
-        int num_threads = (N + two_dplus1 - 1) / two_dplus1;
-        int num_blocks = (num_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-        downsweep_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(input, num_threads, two_d, two_dplus1);
+        long long elements_to_process = (rounded_length + two_dplus1 - 1LL) / two_dplus1;
+        int num_blocks = (int)((elements_to_process + THREADS_PER_BLOCK - 1LL) / THREADS_PER_BLOCK);
+        downsweep_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(input, rounded_length, two_d, two_dplus1);
+        // cudaError_t err = cudaGetLastError();
+        // if (err != cudaSuccess) {
+        //     printf("CUDA Error in downsweep_kernel: %s\n", cudaGetErrorString(err));
+        // }
+        cudaDeviceSynchronize();
     }
 
     // copy the result to the output
