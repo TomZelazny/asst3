@@ -83,30 +83,21 @@ void exclusive_scan(int* input, int N, int* result)
     cudaMalloc(&device_two_d, sizeof(int));
     int number_of_threads = 0;
     int number_of_blocks = 0;
+    
+    int* tmp_result = new int[N];
     for (int two_d = 1; two_d <= N/2; two_d*=2) {
         number_of_threads = N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
+        printf("two_d: %d, number_of_threads: %d, number_of_blocks: %d\n", two_d, number_of_threads, number_of_blocks);
         cudaMemcpy(device_two_d, &two_d, sizeof(int), cudaMemcpyHostToDevice);
         upsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
         cudaDeviceSynchronize();
+        
+        cudaMemcpy(tmp_result, result, N * sizeof(int), cudaMemcpyDeviceToHost);
+        printf("upsweep result: ");
+        for(int i = 0; i < N; i++) { printf("%d ", tmp_result[i]); }
+        printf("\n");
     }
-
-    int* tmp_result = new int[N];
-    cudaMemcpy(tmp_result, result, N * sizeof(int), cudaMemcpyDeviceToHost);
-    printf("upsweep result: ");
-    for(int i = 0; i < N; i++) {
-        printf("%d ", tmp_result[i]);
-    }
-    printf("\n");
-    
-    int* tmp_input = new int[N];
-    cudaMemcpy(tmp_input, input, N * sizeof(int), cudaMemcpyDeviceToHost);
-    printf("input: ");
-    for(int i = 0; i < N; i++) {
-        printf("%d ", tmp_input[i]);
-    }
-    printf("\n");
-
 
     int zro = 0;
     cudaMemcpy(&result[N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
