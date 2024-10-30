@@ -34,7 +34,7 @@ __global__ void upsweep(int N, int* result, int two_d) {
 
     // this check is necessary to make the code work for values of N
     // that are not a multiple of the thread block size (blockDim.x)
-    if (i+two_dplus1-1 < N)
+    if (i+two_dplus1-1 =< N)
     //    result[i+two_dplus1-1] += result[i+two_d-1];
         result[i] = i;
 }
@@ -45,7 +45,7 @@ __global__ void downsweep(int N, int* result, int two_d) {
 
     // this check is necessary to make the code work for values of N
     // that are not a multiple of the thread block size (blockDim.x)
-    if (i+two_dplus1-1 < N) {
+    if (i+two_dplus1-1 =< N) {
         int t = result[i+two_d-1];
         result[i+two_d-1] = result[i+two_dplus1-1];
         result[i+two_dplus1-1] += t;
@@ -91,7 +91,7 @@ void exclusive_scan(int* input, int N, int* result)
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         printf("two_d: %d, number_of_threads: %d, number_of_blocks: %d\n", two_d, number_of_threads, number_of_blocks);
         cudaMemcpy(device_two_d, &two_d, sizeof(int), cudaMemcpyHostToDevice);
-        upsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
+        upsweep<<<number_of_blocks, number_of_threads>>>(N, result, two_d);
         cudaDeviceSynchronize();
         
         cudaMemcpy(tmp_result, result, N * sizeof(int), cudaMemcpyDeviceToHost);
@@ -108,7 +108,7 @@ void exclusive_scan(int* input, int N, int* result)
         number_of_threads = N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         cudaMemcpy(device_two_d, &two_d, sizeof(int), cudaMemcpyHostToDevice);
-        downsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
+        downsweep<<<number_of_blocks, number_of_threads>>>(N, result, two_d);
         cudaDeviceSynchronize();
     }
     cudaFree(device_two_d);
