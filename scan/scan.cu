@@ -212,17 +212,21 @@ double cudaScanThrust(int* inarray, int* end, int* resultarray) {
 __global__
 void flag_repeats_kernel(int* input, int N, int* flags) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index >= N) return;
-
-    flags[index] = (input[index] == input[index + 1]) ? 1 : 0;
+    if (index < N - 1) {
+        flags[index] = (input[index] == input[index + 1]) ? 1 : 0;
+    }
+    // Make sure the last element's flag is 0
+    else if (index == N - 1) {
+        flags[index] = 0;
+    }
 }
 
 __global__
-void compact_kernel(int* input, int N, int* scanned_results, int* output) {
+void compact_kernel(int* flags, int N, int* scanned_results, int* output) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < N - 1) {
-        if (input[index] == input[index + 1]) {
-            output[scanned_results[index]] = input[index];
+        if (flags[index] == 1) {
+            output[scanned_results[index]] = index;
         }
     }
 }
@@ -249,22 +253,41 @@ int find_repeats(int* device_input, int length, int* device_output) {
 
     int* device_flags;
     cudaMalloc((void **)&device_flags, length * sizeof(int));
+    if (device_flags == nullptr) return 0;
+    // Initialize the flags to 0
+    cudaMemset(device_flags, 0, length * sizeof(int));
 
     // stage 1: flag repeats
-    int num_threads = (length + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    int num_blocks = (num_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    flag_repeats_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(device_input, length - 1, device_flags);
+    int num_blocks = (length + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    flag_repeats_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(device_input, length, device_flags);
+    cudaDeviceSynchronize();
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("CUDA Error in flag_repeats_kernel: %s\n", cudaGetErrorString(err));
+    }
     
     // stage 2: exclusive scan
-    exclusive_scan(device_flags, length, device_flags);
+    int* exclusive_scan_result;
+    cudaMalloc((void **)&exclusive_scan_result, length * sizeof(int));
+    if (exclusive_scan_result == nullptr) {
+        cudaFree(device_flags);
+        return 0;
+    }
+    exclusive_scan(device_flags, length, exclusive_scan_result);
 
     // stage 3: compact
-    compact_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(device_input, length, device_flags, device_output);
+    compact_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(device_flags, length, exclusive_scan_result, device_output);
+    cudaDeviceSynchronize();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("CUDA Error in compact_kernel: %s\n", cudaGetErrorString(err));
+    }
 
     int total_repeats;
-    cudaMemcpy(&total_repeats, device_flags + length - 1, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&total_repeats, exclusive_scan_result + length - 1, sizeof(int), cudaMemcpyDeviceToHost);
 
     cudaFree(device_flags);
+    cudaFree(exclusive_scan_result);
     return total_repeats;
 }
 
