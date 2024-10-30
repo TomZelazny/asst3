@@ -35,8 +35,7 @@ __global__ void upsweep(int N, int* result, int two_d) {
     // this check is necessary to make the code work for values of N
     // that are not a multiple of the thread block size (blockDim.x)
     if (i+two_dplus1-1 <= N)
-    //    result[i+two_dplus1-1] += result[i+two_d-1];
-        result[i] = i;
+       result[i+two_dplus1-1] += result[i+two_d-1];
 }
 
 __global__ void downsweep(int N, int* result, int two_d) {
