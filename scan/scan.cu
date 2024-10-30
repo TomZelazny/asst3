@@ -101,6 +101,8 @@ void exclusive_scan(int* input, int N, int* result)
         downsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
         cudaDeviceSynchronize();
     }
+    cudaMemcpy(result, input, N * sizeof(int), cudaMemcpyDeviceToDevice);
+    cudaFree(device_two_d);
 }
 
 
