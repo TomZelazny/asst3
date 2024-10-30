@@ -90,16 +90,15 @@ void exclusive_scan(int* input, int N, int* result)
         upsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
         cudaDeviceSynchronize();
     }
-    int zro = 0;
-    cudaMemcpy(&result[N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
+
     int* tmp_result = new int[N];
-    
     cudaMemcpy(tmp_result, result, N * sizeof(int), cudaMemcpyDeviceToHost);
     printf("upsweep result: ");
     for(int i = 0; i < N; i++) {
         printf("%d ", tmp_result[i]);
     }
     printf("\n");
+    
     int* tmp_input = new int[N];
     cudaMemcpy(tmp_input, input, N * sizeof(int), cudaMemcpyDeviceToHost);
     printf("input: ");
@@ -107,6 +106,11 @@ void exclusive_scan(int* input, int N, int* result)
         printf("%d ", tmp_input[i]);
     }
     printf("\n");
+
+
+    int zro = 0;
+    cudaMemcpy(&result[N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
+    
     // downsweep phase
     for (int two_d = N/2; two_d >= 1; two_d /= 2) {
         number_of_threads = N / (2 * two_d);
