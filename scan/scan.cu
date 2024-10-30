@@ -32,7 +32,7 @@ __global__ void upsweep(int N, int* result, int two_d) {
     int two_dplus1 = two_d * 2;
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int cur_idx = i * two_dplus1  - 1;
+    int cur_idx = i * two_dplus1 - 1;
     if ((i + 1) * two_dplus1 - 1 <= N)
        result[cur_idx + two_dplus1] += result[cur_idx + two_d];
 }
@@ -40,11 +40,11 @@ __global__ void upsweep(int N, int* result, int two_d) {
 __global__ void downsweep(int N, int* result, int two_d) {
     int two_dplus1 = two_d * 2;
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (i+two_dplus1-1 <= N) {
-        int t = result[i+two_d-1];
-        result[i+two_d-1] = result[i+two_dplus1-1];
-        result[i+two_dplus1-1] += t;
+    int cur_idx = i * two_dplus1 - 1;
+    if ( <= N) {
+        int t = result[cur_idx+two_d];
+        result[cur_idx+two_d] = result[cur_idx+two_dplus1];
+        result[cur_idx+two_dplus1] += t;
     }
 }
 
