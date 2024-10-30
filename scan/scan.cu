@@ -90,7 +90,7 @@ void exclusive_scan(int* input, int N, int* result)
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         printf("two_d: %d, number_of_threads: %d, number_of_blocks: %d\n", two_d, number_of_threads, number_of_blocks);
         cudaMemcpy(device_two_d, &two_d, sizeof(int), cudaMemcpyHostToDevice);
-        upsweep<<<number_of_blocks, number_of_threads>>>(N, result, two_d);
+        upsweep<<<number_of_blocks, number_of_threads>>>(N, result, device_two_d);
         cudaDeviceSynchronize();
         
         cudaMemcpy(tmp_result, result, N * sizeof(int), cudaMemcpyDeviceToHost);
@@ -107,7 +107,7 @@ void exclusive_scan(int* input, int N, int* result)
         number_of_threads = N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         cudaMemcpy(device_two_d, &two_d, sizeof(int), cudaMemcpyHostToDevice);
-        downsweep<<<number_of_blocks, number_of_threads>>>(N, result, two_d);
+        downsweep<<<number_of_blocks, number_of_threads>>>(N, result, device_two_d);
         cudaDeviceSynchronize();
     }
     cudaFree(device_two_d);
