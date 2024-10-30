@@ -86,20 +86,21 @@ void exclusive_scan(int* input, int N, int* result)
     for (int two_d = 1; two_d <= N/2; two_d*=2) {
         number_of_threads = N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
-        printf("upsweep two_d: %d, number_of_threads: %d, number_of_blocks: %d\n", two_d, number_of_threads, number_of_blocks);
         cudaMemcpy(device_two_d, &two_d, sizeof(int), cudaMemcpyHostToDevice);
         upsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
         cudaDeviceSynchronize();
     }
-    printf("done upsweep 1\n");
     int zro = 0;
     cudaMemcpy(&result[N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
-    printf("done upsweep 2\n");
+    int* inarray = new int[N];
+    cudaMemcpy(inarray, result, N * sizeof(int), cudaMemcpyDeviceToHost);
+    for(int i = 0; i < N; i++) {
+        printf("%d ", inarray[i]);
+    }
     // downsweep phase
     for (int two_d = N/2; two_d >= 1; two_d /= 2) {
         number_of_threads = N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
-        printf("downsweep two_d: %d, number_of_threads: %d, number_of_blocks: %d\n", two_d, number_of_threads, number_of_blocks);
         cudaMemcpy(device_two_d, &two_d, sizeof(int), cudaMemcpyHostToDevice);
         downsweep<<<number_of_blocks, threadsPerBlock>>>(N, result, two_d);
         cudaDeviceSynchronize();
