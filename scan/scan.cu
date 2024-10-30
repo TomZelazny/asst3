@@ -92,9 +92,8 @@ void exclusive_scan(int* input, int N, int* result)
         cudaDeviceSynchronize();
     }
     printf("done upsweep 1\n");
-    //print length of N and result
-    printf("N: %d, sizeof(result): %d\n", N, sizeof(result));
-    result[N-1] = 0;
+    int zro = 0;
+    cudaMemcpy(&result[N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
     printf("done upsweep 2\n");
     // downsweep phase
     for (int two_d = N/2; two_d >= 1; two_d /= 2) {
