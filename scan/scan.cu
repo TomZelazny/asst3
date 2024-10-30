@@ -236,7 +236,7 @@ int find_repeats(int* device_input, int length, int* device_output) {
     // stage 3: compact
     compact_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(device_input, length, device_flags, device_output);
 
-    init total_repeats;
+    int total_repeats;
     cudaMemcpy(&total_repeats, device_flags + length - 1, sizeof(int), cudaMemcpyDeviceToHost);
 
     cudaFree(device_flags);
