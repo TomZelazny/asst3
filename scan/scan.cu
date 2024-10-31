@@ -250,7 +250,7 @@ int find_repeats(int* device_input, int length, int* device_output) {
     }
     printf("\n");
 
-    repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask, device_idx_array, device_output);
+    repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_repeat_mask, device_idx_array, device_output);
 
     // print result
     int* result = new int[N];
