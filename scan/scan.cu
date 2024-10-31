@@ -65,6 +65,7 @@ __global__ void downsweep(int N, int* result, int two_d) {
 void exclusive_scan(int* input, int N, int* result)
 {
     const int threadsPerBlock = 512;
+    const int rounded_N = nextPow2(N);
     // CS149 TODO:
     //
     // Implement your exclusive scan implementation here.  Keep in
@@ -81,18 +82,18 @@ void exclusive_scan(int* input, int N, int* result)
     for (int two_d = 1; two_d <= N/2; two_d*=2) {
         number_of_threads = N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
-        upsweep<<<number_of_blocks, min(number_of_threads, threadsPerBlock)>>>(nextPow2(N), result, two_d);
+        upsweep<<<number_of_blocks, min(number_of_threads, threadsPerBlock)>>>(rounded_N, result, two_d);
         cudaDeviceSynchronize();
     }
 
     int zro = 0;
-    cudaMemcpy(&result[N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(&result[rounded_N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
     
     // downsweep phase
     for (int two_d = N/2; two_d >= 1; two_d /= 2) {
         number_of_threads = N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
-        downsweep<<<number_of_blocks, min(number_of_threads, threadsPerBlock)>>>(nextPow2(N), result, two_d);
+        downsweep<<<number_of_blocks, min(number_of_threads, threadsPerBlock)>>>(rounded_N, result, two_d);
         cudaDeviceSynchronize();
     }
 }
