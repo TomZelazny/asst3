@@ -245,12 +245,22 @@ int find_repeats(int* device_input, int length, int* device_output) {
 
     // print idx_array
     printf("idx_array: ");
-    for (int i = 0; i <= N; i++) {
+    for (int i = 0; i < N; i++) {
         printf("%d ", idx_array[i]);
     }
     printf("\n");
 
     repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask, device_idx_array, device_output);
+
+    // print result
+    int* result = new int[N];
+    cudaMemcpy(result, device_output, N*sizeof(int), cudaMemcpyDeviceToHost);
+    printf("result: ");
+    for (int i = 0; i < N; i++) {
+        printf("%d ", result[i]);
+    }
+    printf("\n");
+    
     return idx_array[N-1]; 
 }
 
