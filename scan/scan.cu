@@ -235,6 +235,15 @@ int find_repeats(int* device_input, int length, int* device_output) {
     cudaDeviceSynchronize();
     printf("after repeat_mask_kernel\n");
 
+    int* local_repeat_mask = new int[N];
+    cudaMemcpy(local_repeat_mask, device_repeat_mask, N*sizeof(int), cudaMemcpyDeviceToHost);
+    printf("local_repeat_mask: ");
+    for (int i = 0; i < N; i++) {
+        printf("%d ", local_repeat_mask[i]);
+    }
+    printf("\n");
+
+
     printf("before exclusive_scan:\n");
     exclusive_scan(device_repeat_mask, N, device_idx_array);
     printf("after exclusive_scan:\n");
