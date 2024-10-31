@@ -208,7 +208,7 @@ int find_repeats(int* device_input, int length, int* device_output) {
     int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
 
     int* device_repeat_mask = nullptr;
-    cudaMalloc(&device_repeat_mask, N*sizeof(float));
+    cudaMalloc(&device_repeat_mask, N*sizeof(int));
     // CS149 TODO:
     //
     // Implement this function. You will probably want to
@@ -222,8 +222,11 @@ int find_repeats(int* device_input, int length, int* device_output) {
     // the actual array length.
     int* idx_array = nullptr;
 
+    printf("before repeat_mask_kernel\n");
     repeat_mask_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask);
     cudaDeviceSynchronize();
+
+    printf("cudaScan:\n");
     cudaScan(device_repeat_mask, device_repeat_mask + N, idx_array);
     printf("idx_array: ");
     for (int i = 1; i < N; i++) {
