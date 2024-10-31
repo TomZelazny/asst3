@@ -194,7 +194,7 @@ __global__ void repeat_list_kernel(int N, int* repeat_mask, int* idx_array, int*
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i <= N)
        if (repeat_mask[i] == 1)
-           result[idx_array[i]] = idx_array[i];
+           result[idx_array[i]] = i;
 }
 // find_repeats --
 //
