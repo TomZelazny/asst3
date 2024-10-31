@@ -190,11 +190,11 @@ __global__ void repeat_mask_kernel(int N, int* input, int* repeat_mask) {
        else
            repeat_mask[i] = 0;
 }
-__global__ void repeat_list_kernel(int N, int* input, int* repeat_mask, int* idx_array, int* result) {
+__global__ void repeat_list_kernel(int N, int* repeat_mask, int* idx_array, int* result) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i <= N)
        if (repeat_mask[i] == 1)
-           result[idx_array[i]] = input[i];
+           result[idx_array[i]] = idx_array[i];
 }
 // find_repeats --
 //
@@ -260,7 +260,7 @@ int find_repeats(int* device_input, int length, int* device_output) {
         printf("%d ", result[i]);
     }
     printf("\n");
-    
+
     return idx_array[N-1]; 
 }
 
