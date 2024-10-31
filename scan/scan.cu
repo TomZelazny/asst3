@@ -203,6 +203,13 @@ __global__ void repeat_list_kernel(int N, int* repeat_mask, int* idx_array, int*
 //
 // Returns the total number of pairs found
 int find_repeats(int* device_input, int length, int* device_output) {
+    int local_input[length];
+    cudaMemcpy(local_input, device_input, length*sizeof(int), cudaMemcpyDeviceToHost);
+    printf("local_input: ");
+    for (int i = 0; i < length; i++) {
+        printf("%d ", local_input[i]);
+    }
+    printf("\n");
     // CS149 TODO:
     //
     // Implement this function. You will probably want to
