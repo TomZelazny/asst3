@@ -99,6 +99,7 @@ void exclusive_scan(int* input, int N, int* result)
 
     int zro = 0;
     cudaMemcpy(&result[N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
+    printf("\n");
     
     // downsweep phase
     for (int two_d = N/2; two_d >= 1; two_d /= 2) {
