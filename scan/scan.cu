@@ -182,6 +182,20 @@ double cudaScanThrust(int* inarray, int* end, int* resultarray) {
 }
 
 
+__global__ void repeat_mask_kernel(int N, int* input, int* repeat_mask) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i <= N)
+       if (input[i] == input[i+1])
+           repeat_mask[i] = 1;
+       else
+           repeat_mask[i] = 0;
+}
+__global__ void repeat_list_kernel(int N, int* input, int* repeat_mask, int* idx_array, int* result) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i <= N)
+       if (repeat_mask[i] == 1)
+           result[idx_array[i]] = input[i];
+}
 // find_repeats --
 //
 // Given an array of integers `device_input`, returns an array of all
@@ -189,7 +203,12 @@ double cudaScanThrust(int* inarray, int* end, int* resultarray) {
 //
 // Returns the total number of pairs found
 int find_repeats(int* device_input, int length, int* device_output) {
+    const int threadsPerBlock = 512;
+    const int rounded_N = nextPow2(N);
+    int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
 
+    int* device_repeat_mask = nullptr;
+    cudaMalloc(&repeat_mask, N*sizeof(float));
     // CS149 TODO:
     //
     // Implement this function. You will probably want to
@@ -201,8 +220,18 @@ int find_repeats(int* device_input, int length, int* device_output) {
     // exclusive_scan function with them. However, your implementation
     // must ensure that the results of find_repeats are correct given
     // the actual array length.
+    int* idx_array = nullptr;
 
-    return 0; 
+    repeat_mask_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask);
+    cudaDeviceSynchronize();
+    cudascan(device_repeat_mask, device_repeat_mask + N, idx_array);
+
+    int* device_idx_array = nullptr;
+    cudaMalloc(&device_idx_array, N*sizeof(int));
+
+    cudaMemcpy(device_idx_array, idx_array, N*sizeof(int), cudaMemcpyHostToDevice);
+    repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask, device_idx_array, device_output);
+    return idx_array[N-1]; 
 }
 
 
