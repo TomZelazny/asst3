@@ -214,35 +214,31 @@ int find_repeats(int* device_input, int length, int* device_output) {
     // exclusive_scan function with them. However, your implementation
     // must ensure that the results of find_repeats are correct given
     // the actual array length.
-    int N = length;
-    int rounded_length = nextPow2(N);
+    int rounded_length = nextPow2(length);
 
     const int threadsPerBlock = 512;
-    int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
+    int number_of_blocks = (length + threadsPerBlock - 1) / threadsPerBlock;
 
     int* device_repeat_mask = nullptr;
-    cudaMalloc(&device_repeat_mask, N*sizeof(int));
+    cudaMalloc(&device_repeat_mask, length*sizeof(int));
 
-    repeat_mask_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask);
+    repeat_mask_kernel<<<number_of_blocks, threadsPerBlock>>>(length, device_input, device_repeat_mask);
     cudaDeviceSynchronize();
 
     int* device_idx_array = nullptr;
     cudaMalloc(&device_idx_array, rounded_length*sizeof(int));
-    cudaMemcpy(device_idx_array, device_repeat_mask, N*sizeof(int), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(device_idx_array, device_repeat_mask, length*sizeof(int), cudaMemcpyDeviceToDevice);
 
-    exclusive_scan(device_idx_array, N, device_idx_array);
+    exclusive_scan(device_idx_array, length, device_idx_array);
 
-    int* idx_array = new int[N];
-    cudaMemcpy(idx_array, device_idx_array, N*sizeof(int), cudaMemcpyDeviceToHost);
+    int size;
+    // move the last element to host
+    cudaMemcpy(&size, &device_idx_array[length-1], sizeof(int), cudaMemcpyDeviceToHost);
 
-    repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_repeat_mask, device_idx_array, device_output);
-
-    // print result
-    int size = idx_array[N-1];
+    repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(length, device_repeat_mask, device_idx_array, device_output);
 
     cudaFree(device_repeat_mask);
     cudaFree(device_idx_array);
-    delete[] idx_array;
 
     return size; 
 }
