@@ -203,12 +203,6 @@ __global__ void repeat_list_kernel(int N, int* input, int* repeat_mask, int* idx
 //
 // Returns the total number of pairs found
 int find_repeats(int* device_input, int length, int* device_output) {
-    int N = length;
-    const int threadsPerBlock = 512;
-    int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
-
-    int* device_repeat_mask = nullptr;
-    cudaMalloc(&device_repeat_mask, N*sizeof(int));
     // CS149 TODO:
     //
     // Implement this function. You will probably want to
@@ -220,24 +214,29 @@ int find_repeats(int* device_input, int length, int* device_output) {
     // exclusive_scan function with them. However, your implementation
     // must ensure that the results of find_repeats are correct given
     // the actual array length.
-    int* idx_array = nullptr;
+    int N = length;
+    const int threadsPerBlock = 512;
+    int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    int* device_repeat_mask = nullptr;
+    int* device_idx_array = nullptr;
+    cudaMalloc(&device_repeat_mask, N*sizeof(int));
+    cudaMalloc(&device_idx_array, N*sizeof(int));
 
     printf("before repeat_mask_kernel\n");
     repeat_mask_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask);
     cudaDeviceSynchronize();
 
     printf("cudaScan:\n");
-    cudaScan(device_repeat_mask, device_repeat_mask + N, idx_array);
+    exclusive_scan(device_repeat_mask, N, device_idx_array);
+    
+    cudaMemcpy(idx_array, device_idx_array, N*sizeof(int), cudaMemcpyDeviceToHost);
     printf("idx_array: ");
     for (int i = 1; i < N; i++) {
         printf("%d ", idx_array[i]);
     }
     printf("\n");
 
-    int* device_idx_array = nullptr;
-    cudaMalloc(&device_idx_array, N*sizeof(int));
-
-    cudaMemcpy(device_idx_array, idx_array, N*sizeof(int), cudaMemcpyHostToDevice);
     repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask, device_idx_array, device_output);
     return idx_array[N-1]; 
 }
