@@ -215,6 +215,8 @@ int find_repeats(int* device_input, int length, int* device_output) {
     // must ensure that the results of find_repeats are correct given
     // the actual array length.
     int N = length;
+    int rounded_length = nextPow2(N);
+
     const int threadsPerBlock = 512;
     int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -235,7 +237,8 @@ int find_repeats(int* device_input, int length, int* device_output) {
     printf("\n");
 
     int* device_idx_array = nullptr;
-    cudaMalloc(&device_idx_array, N*sizeof(int));
+    
+    cudaMalloc(&device_idx_array, rounded_length*sizeof(int));
     cudaMemcpy(device_idx_array, device_repeat_mask, N*sizeof(int), cudaMemcpyDeviceToDevice);
 
     exclusive_scan(device_idx_array, N, device_idx_array);
@@ -253,15 +256,16 @@ int find_repeats(int* device_input, int length, int* device_output) {
     repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_repeat_mask, device_idx_array, device_output);
 
     // print result
-    int* result = new int[N];
-    cudaMemcpy(result, device_output, N*sizeof(int), cudaMemcpyDeviceToHost);
+    int size = idx_array[N-1];
+    int* result = new int[size];
+    cudaMemcpy(result, device_output, size*sizeof(int), cudaMemcpyDeviceToHost);
     printf("result: ");
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < size; i++) {
         printf("%d ", result[i]);
     }
     printf("\n");
 
-    return idx_array[N-1]; 
+    return size; 
 }
 
 
