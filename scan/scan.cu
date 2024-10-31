@@ -203,13 +203,6 @@ __global__ void repeat_list_kernel(int N, int* repeat_mask, int* idx_array, int*
 //
 // Returns the total number of pairs found
 int find_repeats(int* device_input, int length, int* device_output) {
-    int local_input[length];
-    cudaMemcpy(local_input, device_input, length*sizeof(int), cudaMemcpyDeviceToHost);
-    printf("local_input: ");
-    for (int i = 0; i < length; i++) {
-        printf("%d ", local_input[i]);
-    }
-    printf("\n");
     // CS149 TODO:
     //
     // Implement this function. You will probably want to
@@ -233,18 +226,7 @@ int find_repeats(int* device_input, int length, int* device_output) {
     repeat_mask_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask);
     cudaDeviceSynchronize();
 
-    int* local_repeat_mask = new int[N];
-    cudaMemcpy(local_repeat_mask, device_repeat_mask, N*sizeof(int), cudaMemcpyDeviceToHost);
-    
-    // print repeat_mask
-    printf("local_repeat_mask: ");
-    for (int i = 0; i < N; i++) {
-        printf("%d ", local_repeat_mask[i]);
-    }
-    printf("\n");
-
     int* device_idx_array = nullptr;
-    
     cudaMalloc(&device_idx_array, rounded_length*sizeof(int));
     cudaMemcpy(device_idx_array, device_repeat_mask, N*sizeof(int), cudaMemcpyDeviceToDevice);
 
@@ -253,24 +235,14 @@ int find_repeats(int* device_input, int length, int* device_output) {
     int* idx_array = new int[N];
     cudaMemcpy(idx_array, device_idx_array, N*sizeof(int), cudaMemcpyDeviceToHost);
 
-    // print idx_array
-    printf("idx_array: ");
-    for (int i = 0; i < N; i++) {
-        printf("%d ", idx_array[i]);
-    }
-    printf("\n");
-
     repeat_list_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_repeat_mask, device_idx_array, device_output);
 
     // print result
     int size = idx_array[N-1];
-    int* result = new int[size];
-    cudaMemcpy(result, device_output, size*sizeof(int), cudaMemcpyDeviceToHost);
-    printf("result: ");
-    for (int i = 0; i < size; i++) {
-        printf("%d ", result[i]);
-    }
-    printf("\n");
+
+    cudaFree(device_repeat_mask);
+    cudaFree(device_idx_array);
+    delete[] idx_array;
 
     return size; 
 }
