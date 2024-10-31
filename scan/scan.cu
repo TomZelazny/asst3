@@ -203,6 +203,7 @@ __global__ void repeat_list_kernel(int N, int* input, int* repeat_mask, int* idx
 //
 // Returns the total number of pairs found
 int find_repeats(int* device_input, int length, int* device_output) {
+    int N = length;
     const int threadsPerBlock = 512;
     int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
 
