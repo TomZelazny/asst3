@@ -243,9 +243,9 @@ int find_repeats(int* device_input, int length, int* device_output) {
     }
     printf("\n");
 
-
+    cudaMemCpy(device_idx_array, device_repeat_mask, N*sizeof(int), cudaMemcpyDeviceToDevice);
     printf("before exclusive_scan:\n");
-    exclusive_scan(device_repeat_mask, N, device_idx_array);
+    exclusive_scan(device_idx_array, N, device_idx_array);
     printf("after exclusive_scan:\n");
 
     int* idx_array = new int[N];
