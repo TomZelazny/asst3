@@ -86,15 +86,14 @@ void exclusive_scan(int* input, int N, int* result)
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         printf("upsweep   two_d: %d, number_of_threads: %d, number_of_blocks: %d\n", two_d, number_of_threads, number_of_blocks);
         upsweep<<<number_of_blocks, number_of_threads>>>(N, result, two_d);
-        
+        cudaDeviceSynchronize();
+                
         cudaMemcpy(tmp_result, result, N * sizeof(int), cudaMemcpyDeviceToHost);
-        printf("upsweep   tmp_result: ");
+        printf("    ");
         for(int i = 0; i < N; i++) {
             printf("%d ", tmp_result[i]);
         }
         printf("\n");
-
-        cudaDeviceSynchronize();
     }
 
     int zro = 0;
@@ -107,15 +106,14 @@ void exclusive_scan(int* input, int N, int* result)
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         printf("downsweep two_d: %d, number_of_threads: %d, number_of_blocks: %d\n", two_d, number_of_threads, number_of_blocks);
         downsweep<<<number_of_blocks, number_of_threads>>>(N, result, two_d);
+        cudaDeviceSynchronize();
         
         cudaMemcpy(tmp_result, result, N * sizeof(int), cudaMemcpyDeviceToHost);
-        printf("downsweep tmp_result: ");
+        printf("    ");
         for(int i = 0; i < N; i++) {
             printf("%d ", tmp_result[i]);
         }
         printf("\n");
-
-        cudaDeviceSynchronize();
     }
 }
 
