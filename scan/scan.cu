@@ -79,8 +79,8 @@ void exclusive_scan(int* input, int N, int* result)
     int number_of_threads = 0;
     int number_of_blocks = 0;
     
-    for (int two_d = 1; two_d <= N/2; two_d*=2) {
-        number_of_threads = N / (2 * two_d);
+    for (int two_d = 1; two_d <= rounded_N/2; two_d*=2) {
+        number_of_threads = rounded_N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         upsweep<<<number_of_blocks, min(number_of_threads, threadsPerBlock)>>>(rounded_N, result, two_d);
         cudaDeviceSynchronize();
@@ -90,8 +90,8 @@ void exclusive_scan(int* input, int N, int* result)
     cudaMemcpy(&result[rounded_N-1], &zro, sizeof(int), cudaMemcpyHostToDevice);
     
     // downsweep phase
-    for (int two_d = N/2; two_d >= 1; two_d /= 2) {
-        number_of_threads = N / (2 * two_d);
+    for (int two_d = rounded_N/2; two_d >= 1; two_d /= 2) {
+        number_of_threads = rounded_N / (2 * two_d);
         number_of_blocks = (number_of_threads + threadsPerBlock - 1) / threadsPerBlock;
         downsweep<<<number_of_blocks, min(number_of_threads, threadsPerBlock)>>>(rounded_N, result, two_d);
         cudaDeviceSynchronize();
