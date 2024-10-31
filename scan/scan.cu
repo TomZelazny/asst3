@@ -204,11 +204,10 @@ __global__ void repeat_list_kernel(int N, int* input, int* repeat_mask, int* idx
 // Returns the total number of pairs found
 int find_repeats(int* device_input, int length, int* device_output) {
     const int threadsPerBlock = 512;
-    const int rounded_N = nextPow2(N);
     int number_of_blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
 
     int* device_repeat_mask = nullptr;
-    cudaMalloc(&repeat_mask, N*sizeof(float));
+    cudaMalloc(&device_repeat_mask, N*sizeof(float));
     // CS149 TODO:
     //
     // Implement this function. You will probably want to
@@ -224,7 +223,7 @@ int find_repeats(int* device_input, int length, int* device_output) {
 
     repeat_mask_kernel<<<number_of_blocks, threadsPerBlock>>>(N, device_input, device_repeat_mask);
     cudaDeviceSynchronize();
-    cudascan(device_repeat_mask, device_repeat_mask + N, idx_array);
+    cudaScan(device_repeat_mask, device_repeat_mask + N, idx_array);
     printf("idx_array: ");
     for (int i = 1; i < N; i++) {
         printf("%d ", idx_array[i]);
