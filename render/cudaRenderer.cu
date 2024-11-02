@@ -56,7 +56,7 @@ __constant__ float  cuConstColorRamp[COLOR_MAP_SIZE][3];
 #include "noiseCuda.cu_inl"
 #include "lookupColor.cu_inl"
 // Use the provided exclusive scan implementation
-#define BLOCKSIZE 256
+#define BLOCKSIZE 1024
 #define SCAN_BLOCK_DIM   BLOCKSIZE
 #include "exclusiveScan.cu_inl"
 #include "circleBoxTest.cu_inl"
@@ -323,13 +323,13 @@ __global__ void kernelAdvanceSnowflake() {
 // pixel from the circle.  Update of the image is done in this
 // function.  Called by kernelRenderCircles()
 __device__ __inline__ void
-shadePixel(int circleIndex, float2 pixelCenter, float3 p, float4* imagePtr) {
+shadePixel(int circleIndex, float2 pixelCenter, float3 p, float4* imagePtr, float rad) {
 
     float diffX = p.x - pixelCenter.x;
     float diffY = p.y - pixelCenter.y;
     float pixelDist = diffX * diffX + diffY * diffY;
 
-    float rad = cuConstRendererParams.radius[circleIndex];;
+    // float rad = cuConstRendererParams.radius[circleIndex];;
     float maxDist = rad * rad;
 
     // circle does not contribute to the image
@@ -423,6 +423,7 @@ __global__ void kernelRenderCircles() {
     __shared__ uint prefixSumScratch[2 * BLOCKSIZE];
     __shared__ uint count;
     __shared__ float3 usefulCircleP[BLOCKSIZE];
+    __shared__ float usefulCircleRad[BLOCKSIZE];
 
     for (int index = 0; index < numCircles; index += BLOCKSIZE) {
         int circleIndex = index + linearThreadIndex;
@@ -462,12 +463,13 @@ __global__ void kernelRenderCircles() {
             atomicAdd(&count, 1);
             prefixSumScratch[i] = circleIndex;
             usefulCircleP[i] = p;
+            usefulCircleRad[i] = rad;
         }
         __syncthreads();
 
         // Shade the pixel according to the circle order
         for (int i = 0; i < count; i++) {
-            shadePixel(prefixSumScratch[i], pixelCenterNorm, usefulCircleP[i], imgPtr);
+            shadePixel(prefixSumScratch[i], pixelCenterNorm, usefulCircleP[i], imgPtr, usefulCircleRad[i]);
         }
         __syncthreads();
     }
@@ -682,8 +684,7 @@ CudaRenderer::advanceAnimation() {
 void
 CudaRenderer::render() {
 
-    // 256 threads per block is a healthy number
-    dim3 blockDim(16, 16, 1);
+    dim3 blockDim(32, 32, 1);
     dim3 gridDim(
         (image->width + blockDim.x - 1) / blockDim.x,
         (image->height + blockDim.y - 1) / blockDim.y);
