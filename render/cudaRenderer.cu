@@ -685,7 +685,7 @@ CudaRenderer::advanceAnimation() {
 void
 CudaRenderer::render() {
 
-    dim3 blockDim(32, 32, 1);
+    dim3 blockDim(32, 32);
     dim3 gridDim(
         (image->width + blockDim.x - 1) / blockDim.x,
         (image->height + blockDim.y - 1) / blockDim.y);
