@@ -435,6 +435,8 @@ __global__ void kernelRenderPixels() {
     
     short imageWidth = cuConstRendererParams.imageWidth;
     short imageHeight = cuConstRendererParams.imageHeight;
+    float invWidth = 1.f / imageWidth;
+    float invHeight = 1.f / imageHeight;
 
     if (pixelX >= imageWidth || pixelY >= imageHeight)
         return;
