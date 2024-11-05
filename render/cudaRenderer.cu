@@ -675,10 +675,17 @@ void
 CudaRenderer::render() {
 
     // 256 threads per block is a healthy number
-    dim3 blockDim(256, 1);
-    dim3 gridDim((numCircles + blockDim.x - 1) / blockDim.x);
+    // dim3 blockDim(256, 1);
+    // dim3 gridDim((numCircles + blockDim.x - 1) / blockDim.x);
 
-    // kernelRenderCircles<<<gridDim, blockDim>>>();
+    // // kernelRenderCircles<<<gridDim, blockDim>>>();
+    // kernelRenderPixels<<<gridDim, blockDim>>>();
+    // cudaDeviceSynchronize();
+    int width = image->width;
+    int height = image->height;
+    dim3 blockDim(16, 16);  // 16x16 = 256 threads per block
+    dim3 gridDim((width + blockDim.x - 1) / blockDim.x, (height + blockDim.y - 1) / blockDim.y);
+
     kernelRenderPixels<<<gridDim, blockDim>>>();
     cudaDeviceSynchronize();
 }
