@@ -441,26 +441,15 @@ __global__ void kernelRenderPixels() {
     if (pixelX >= imageWidth || pixelY >= imageHeight)
         return;
 
+    float4* imgPtr = (float4*)(&cuConstRendererParams.imageData[4 * (pixelY * imageWidth + pixelX)]);
+    float2 pixelCenterNorm = make_float2(invWidth * (static_cast<float>(pixelX) + 0.5f),
+                                        invHeight * (static_cast<float>(pixelY) + 0.5f));
+
+
     for (int circle_idx = 0; circle_idx < cuConstRendererParams.numCircles; circle_idx++) {
         int index3 = 3 * circle_idx;
         float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
         float  rad = cuConstRendererParams.radius[circle_idx];
-        
-        short minX = static_cast<short>(imageWidth * (p.x - rad));
-        short maxX = static_cast<short>(imageWidth * (p.x + rad)) + 1;
-        short minY = static_cast<short>(imageHeight * (p.y - rad));
-        short maxY = static_cast<short>(imageHeight * (p.y + rad)) + 1;
-
-        // a bunch of clamps.  Is there a CUDA built-in for this?
-        short screenMinX = (minX > 0) ? ((minX < imageWidth) ? minX : imageWidth) : 0;
-        short screenMaxX = (maxX > 0) ? ((maxX < imageWidth) ? maxX : imageWidth) : 0;
-        short screenMinY = (minY > 0) ? ((minY < imageHeight) ? minY : imageHeight) : 0;
-        short screenMaxY = (maxY > 0) ? ((maxY < imageHeight) ? maxY : imageHeight) : 0;
-
-        float4* imgPtr = (float4*)(&cuConstRendererParams.imageData[4 * (pixelY * imageWidth + screenMinX)]);
-        float2 pixelCenterNorm = make_float2(invWidth * (static_cast<float>(pixelX) + 0.5f),
-                                                invHeight * (static_cast<float>(pixelY) + 0.5f));
-        
         shadePixel(circle_idx, pixelCenterNorm, p, imgPtr);
     }
 }
