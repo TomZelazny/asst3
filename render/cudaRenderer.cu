@@ -468,7 +468,7 @@ __global__ void kernelRenderPixels() {
                 
         if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
             // sharedPositions[relevant_circles_count] = p;
-            // sharedRadii[relevant_circles_count] = rad;
+            sharedRadii[relevant_circles_count] = rad;
             // sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
             relevant_circles_count++;
         }
