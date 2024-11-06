@@ -453,7 +453,7 @@ __global__ void kernelRenderPixels() {
 
         // make a local copy of the pixel color
         float4 pixelData = *imgPtr;
-        shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
+        shadePixel(circle_idx, pixelCenterNorm, p, pixelData);
         *imgPtr = pixelData;
     }
 }
