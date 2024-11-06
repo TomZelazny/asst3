@@ -466,6 +466,8 @@ __global__ void kernelRenderPixels() {
         float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
         float rad = cuConstRendererParams.radius[i];
         
+        int cpas = circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom);
+        
         // if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
         //     sharedPositions[relevant_circles_count] = p;
         //     sharedRadii[relevant_circles_count] = rad;
