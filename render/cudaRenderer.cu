@@ -474,6 +474,7 @@ __global__ void kernelRenderPixels() {
     
     // make a local copy of the pixel color
     float4 pixelData = *imgPtr;
+    printf("relevant_circles_count: %d\n", relevant_circles_count);
     for (int circle_idx = 0; circle_idx < relevant_circles_count; circle_idx++) {
         int index3 = 3 * circle_idx;
         float3 p = sharedPositions[circle_idx];
