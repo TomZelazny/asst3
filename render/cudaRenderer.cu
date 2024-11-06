@@ -450,8 +450,11 @@ __global__ void kernelRenderPixels() {
     for (int circle_idx = 0; circle_idx < cuConstRendererParams.numCircles; circle_idx++) {
         int index3 = 3 * circle_idx;
         float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
-        float  rad = cuConstRendererParams.radius[circle_idx];
-        shadePixel(circle_idx, pixelCenterNorm, p, imgPtr);
+
+        // make a local copy of the pixel color
+        float4 pixelData = *imgPtr;
+        shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
+        *imgPtr = pixelData;
     }
 }
 
