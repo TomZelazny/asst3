@@ -434,8 +434,8 @@ __global__ void kernelRenderPixels() {
     int numCircles = cuConstRendererParams.numCircles;
     extern __shared__ float sharedMemory[];
     float3* sharedPositions = (float3*)sharedMemory;
-    float* sharedRadii = (float*)&sharedPositions[cuConstRendererParams.numCircles];
-    float3* sharedColors = (float3*)&sharedRadii[cuConstRendererParams.numCircles];
+    float* sharedRadii = (float*)&sharedPositions[blockDim.x * blockDim.y];
+    float3* sharedColors = (float3*)&sharedRadii[blockDim.x * blockDim.y];
 
     int pixelX = blockIdx.x * blockDim.x + threadIdx.x;
     int pixelY = blockIdx.y * blockDim.y + threadIdx.y;
@@ -468,9 +468,9 @@ __global__ void kernelRenderPixels() {
                 
         if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
             sharedPositions[relevant_circles_count] = p;
-        //     sharedRadii[relevant_circles_count] = rad;
-        //     sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
-        //     relevant_circles_count++;
+            sharedRadii[relevant_circles_count] = rad;
+            sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
+            relevant_circles_count++;
         }
 
     }
