@@ -518,7 +518,7 @@ __global__ void kernelRenderPixels() {
 
         } else {
             // simple: each circle has an assigned color
-            int index3 = 3 * circleIndex;
+            int index3 = 3 * circle_idx;
             rgb = sharedColors[circle_idx];
             alpha = .5f;
         }
