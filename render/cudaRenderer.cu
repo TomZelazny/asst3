@@ -460,7 +460,7 @@ __global__ void kernelRenderPixels() {
     for(int i = (blockDim.x * threadIdx.y) + blockIdx.x; i < cuConstRendererParams.numCircles; i += blockDim.x * blockDim.y) {
         int index3 = 3 * i;
         float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
-        float rad = cuConstRendererParams.radius[circleIndex];
+        float rad = cuConstRendererParams.radius[i];
         
         if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
             sharedPositions[i] = p;
@@ -480,7 +480,7 @@ __global__ void kernelRenderPixels() {
 
         //shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
         //STARTING SHADE PIXEL
-        float rad = sharedRadii[circleIndex];
+        float rad = sharedRadii[circle_idx];
         float diffX = p.x - pixelCenterNorm.x;
         float diffY = p.y - pixelCenterNorm.y;
         if(rad < diffX || -rad > diffX || rad < diffY || -rad > diffY)
@@ -525,7 +525,7 @@ __global__ void kernelRenderPixels() {
 
         float oneMinusAlpha = 1.f - alpha;
 
-        float4 existingColor = *pixelData;
+        float4 existingColor = pixelData;
         pixelData.x = alpha * rgb.x + oneMinusAlpha * existingColor.x;
         pixelData.y = alpha * rgb.y + oneMinusAlpha * existingColor.y;
         pixelData.z = alpha * rgb.z + oneMinusAlpha * existingColor.z;
