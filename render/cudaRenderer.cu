@@ -465,10 +465,10 @@ __global__ void kernelRenderPixels() {
         float rad = cuConstRendererParams.radius[i];
         
         if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
-            sharedPositions[index3] = p;
-            // sharedRadii[i] = rad;
-            // sharedColors[i] = *(float3*)(&cuConstRendererParams.color[index3]);
-            // relevant_circles_count++;
+            sharedPositions[relevant_circles_count] = p;
+            sharedRadii[relevant_circles_count] = rad;
+            sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
+            relevant_circles_count++;
         }
 
     }
@@ -479,7 +479,7 @@ __global__ void kernelRenderPixels() {
     printf("relevant_circles_count: %d\n", relevant_circles_count);
     for (int circle_idx = 0; circle_idx < relevant_circles_count; circle_idx++) {
         int index3 = 3 * circle_idx;
-        float3 p = sharedPositions[index3];
+        float3 p = sharedPositions[circle_idx];
 
         shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
         //STARTING SHADE PIXEL
