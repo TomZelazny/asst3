@@ -459,19 +459,21 @@ __global__ void kernelRenderPixels() {
 
     int relevant_circles_count = 0;
 
-    // for(int i = (blockDim.x * threadIdx.y) + blockIdx.x; i < cuConstRendererParams.numCircles; i += blockDim.x * blockDim.y) {
-    //     int index3 = 3 * i;
-    //     float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
-    //     float rad = cuConstRendererParams.radius[i];
+    for(int i = (blockDim.x * threadIdx.y) + blockIdx.x; i < cuConstRendererParams.numCircles; i += blockDim.x * blockDim.y) {
+        if(i >= numCircles)
+            break;
+        int index3 = 3 * i;
+        float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
+        float rad = cuConstRendererParams.radius[i];
         
-    //     if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
-    //         sharedPositions[relevant_circles_count] = p;
-    //         sharedRadii[relevant_circles_count] = rad;
-    //         sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
-    //         relevant_circles_count++;
-    //     }
+        if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
+            sharedPositions[relevant_circles_count] = p;
+            sharedRadii[relevant_circles_count] = rad;
+            sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
+            relevant_circles_count++;
+        }
 
-    // }
+    }
     __syncthreads();
     
     // make a local copy of the pixel color
