@@ -479,58 +479,58 @@ __global__ void kernelRenderPixels() {
         int index3 = 3 * circle_idx;
         float3 p = sharedPositions[circle_idx];
 
-        //shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
+        shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
         //STARTING SHADE PIXEL
-        float rad = sharedRadii[circle_idx];
-        float diffX = p.x - pixelCenterNorm.x;
-        float diffY = p.y - pixelCenterNorm.y;
-        if(rad < diffX || -rad > diffX || rad < diffY || -rad > diffY)
-            return;
+        // float rad = sharedRadii[circle_idx];
+        // float diffX = p.x - pixelCenterNorm.x;
+        // float diffY = p.y - pixelCenterNorm.y;
+        // if(rad < diffX || -rad > diffX || rad < diffY || -rad > diffY)
+        //     return;
 
-        float pixelDist = diffX * diffX + diffY * diffY;
-        float maxDist = rad * rad;
+        // float pixelDist = diffX * diffX + diffY * diffY;
+        // float maxDist = rad * rad;
 
-        // circle does not contribute to the image
-        if (pixelDist > maxDist)
-            return;
+        // // circle does not contribute to the image
+        // if (pixelDist > maxDist)
+        //     return;
 
-        float3 rgb;
-        float alpha;
+        // float3 rgb;
+        // float alpha;
 
-        // there is a non-zero contribution.  Now compute the shading value
+        // // there is a non-zero contribution.  Now compute the shading value
 
-        // suggestion: This conditional is in the inner loop.  Although it
-        // will evaluate the same for all threads, there is overhead in
-        // setting up the lane masks etc to implement the conditional.  It
-        // would be wise to perform this logic outside of the loop next in
-        // kernelRenderCircles.  (If feeling good about yourself, you
-        // could use some specialized template magic).
-        if (cuConstRendererParams.sceneName == SNOWFLAKES || cuConstRendererParams.sceneName == SNOWFLAKES_SINGLE_FRAME) {
+        // // suggestion: This conditional is in the inner loop.  Although it
+        // // will evaluate the same for all threads, there is overhead in
+        // // setting up the lane masks etc to implement the conditional.  It
+        // // would be wise to perform this logic outside of the loop next in
+        // // kernelRenderCircles.  (If feeling good about yourself, you
+        // // could use some specialized template magic).
+        // if (cuConstRendererParams.sceneName == SNOWFLAKES || cuConstRendererParams.sceneName == SNOWFLAKES_SINGLE_FRAME) {
 
-            const float kCircleMaxAlpha = .5f;
-            const float falloffScale = 4.f;
+        //     const float kCircleMaxAlpha = .5f;
+        //     const float falloffScale = 4.f;
 
-            float normPixelDist = sqrt(pixelDist) / rad;
-            rgb = lookupColor(normPixelDist);
+        //     float normPixelDist = sqrt(pixelDist) / rad;
+        //     rgb = lookupColor(normPixelDist);
 
-            float maxAlpha = .6f + .4f * (1.f-p.z);
-            maxAlpha = kCircleMaxAlpha * fmaxf(fminf(maxAlpha, 1.f), 0.f); // kCircleMaxAlpha * clamped value
-            alpha = maxAlpha * exp(-1.f * falloffScale * normPixelDist * normPixelDist);
+        //     float maxAlpha = .6f + .4f * (1.f-p.z);
+        //     maxAlpha = kCircleMaxAlpha * fmaxf(fminf(maxAlpha, 1.f), 0.f); // kCircleMaxAlpha * clamped value
+        //     alpha = maxAlpha * exp(-1.f * falloffScale * normPixelDist * normPixelDist);
 
-        } else {
-            // simple: each circle has an assigned color
-            int index3 = 3 * circle_idx;
-            rgb = sharedColors[circle_idx];
-            alpha = .5f;
-        }
+        // } else {
+        //     // simple: each circle has an assigned color
+        //     int index3 = 3 * circle_idx;
+        //     rgb = sharedColors[circle_idx];
+        //     alpha = .5f;
+        // }
 
-        float oneMinusAlpha = 1.f - alpha;
+        // float oneMinusAlpha = 1.f - alpha;
 
-        float4 existingColor = pixelData;
-        pixelData.x = alpha * rgb.x + oneMinusAlpha * existingColor.x;
-        pixelData.y = alpha * rgb.y + oneMinusAlpha * existingColor.y;
-        pixelData.z = alpha * rgb.z + oneMinusAlpha * existingColor.z;
-        pixelData.w = alpha + existingColor.w;
+        // float4 existingColor = pixelData;
+        // pixelData.x = alpha * rgb.x + oneMinusAlpha * existingColor.x;
+        // pixelData.y = alpha * rgb.y + oneMinusAlpha * existingColor.y;
+        // pixelData.z = alpha * rgb.z + oneMinusAlpha * existingColor.z;
+        // pixelData.w = alpha + existingColor.w;
         //ENDING SHADE PIXEL
     }
     *imgPtr = pixelData;
