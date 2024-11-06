@@ -13,6 +13,7 @@
 #include "noise.h"
 #include "sceneLoader.h"
 #include "util.h"
+#include "circleBoxTest.cu_inl"
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Putting all the cuda kernels here
@@ -430,6 +431,9 @@ __global__ void kernelRenderCircles() {
 
 
 __global__ void kernelRenderPixels() {
+    extern __shared__ float3 sharedPositions[];
+    extern __shared__ float sharedRadii[];
+    extern __shared__ float3 sharedColors[];
 
     int pixelX = blockIdx.x * blockDim.x + threadIdx.x;
     int pixelY = blockIdx.y * blockDim.y + threadIdx.y;
@@ -446,14 +450,87 @@ __global__ void kernelRenderPixels() {
     float2 pixelCenterNorm = make_float2(invWidth * (static_cast<float>(pixelX) + 0.5f),
                                         invHeight * (static_cast<float>(pixelY) + 0.5f));
 
+    int left = (blockIdx.x * blockDim.x)*invWidth;
+    int right = (left + blockDim.x + 1)*invWidth;
+    int top = (blockIdx.y * blockDim.y)*invHeight;
+    int bottom = (top + blockDim.y + 1)*invHeight;
 
+    int relevant_circles_count = 0;
+
+    for(int i = (blockDim.x * threadIdx.y) + blockIdx.x; i < cuConstRendererParams.numCircles; i += blockDim.x * blockDim.y) {
+        int index3 = 3 * i;
+        float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
+        float rad = cuConstRendererParams.radius[circleIndex];
+        
+        if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
+            sharedPositions[i] = p;
+            sharedRadii[i] = rad;
+            sharedColors[i] = *(float3*)(&cuConstRendererParams.color[index3]);
+            relevant_circles_count++;
+        }
+
+    }
+    __syncthreads();
+    
     // make a local copy of the pixel color
     float4 pixelData = *imgPtr;
-    for (int circle_idx = 0; circle_idx < cuConstRendererParams.numCircles; circle_idx++) {
+    for (int circle_idx = 0; circle_idx < relevant_circles_count; circle_idx++) {
         int index3 = 3 * circle_idx;
-        float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
+        float3 p = sharedPositions[circle_idx];
 
-        shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
+        //shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
+        //STARTING SHADE PIXEL
+        float rad = sharedRadii[circleIndex];
+        float diffX = p.x - pixelCenterNorm.x;
+        float diffY = p.y - pixelCenterNorm.y;
+        if(rad < diffX || -rad > diffX || rad < diffY || -rad > diffY)
+            return;
+
+        float pixelDist = diffX * diffX + diffY * diffY;
+        float maxDist = rad * rad;
+
+        // circle does not contribute to the image
+        if (pixelDist > maxDist)
+            return;
+
+        float3 rgb;
+        float alpha;
+
+        // there is a non-zero contribution.  Now compute the shading value
+
+        // suggestion: This conditional is in the inner loop.  Although it
+        // will evaluate the same for all threads, there is overhead in
+        // setting up the lane masks etc to implement the conditional.  It
+        // would be wise to perform this logic outside of the loop next in
+        // kernelRenderCircles.  (If feeling good about yourself, you
+        // could use some specialized template magic).
+        if (cuConstRendererParams.sceneName == SNOWFLAKES || cuConstRendererParams.sceneName == SNOWFLAKES_SINGLE_FRAME) {
+
+            const float kCircleMaxAlpha = .5f;
+            const float falloffScale = 4.f;
+
+            float normPixelDist = sqrt(pixelDist) / rad;
+            rgb = lookupColor(normPixelDist);
+
+            float maxAlpha = .6f + .4f * (1.f-p.z);
+            maxAlpha = kCircleMaxAlpha * fmaxf(fminf(maxAlpha, 1.f), 0.f); // kCircleMaxAlpha * clamped value
+            alpha = maxAlpha * exp(-1.f * falloffScale * normPixelDist * normPixelDist);
+
+        } else {
+            // simple: each circle has an assigned color
+            int index3 = 3 * circleIndex;
+            rgb = sharedColors[circle_idx];
+            alpha = .5f;
+        }
+
+        float oneMinusAlpha = 1.f - alpha;
+
+        float4 existingColor = *pixelData;
+        pixelData.x = alpha * rgb.x + oneMinusAlpha * existingColor.x;
+        pixelData.y = alpha * rgb.y + oneMinusAlpha * existingColor.y;
+        pixelData.z = alpha * rgb.z + oneMinusAlpha * existingColor.z;
+        pixelData.w = alpha + existingColor.w;
+        //ENDING SHADE PIXEL
     }
     *imgPtr = pixelData;
 }
