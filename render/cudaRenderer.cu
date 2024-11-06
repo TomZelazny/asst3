@@ -454,8 +454,8 @@ __global__ void kernelRenderPixels() {
         float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
 
         shadePixel(circle_idx, pixelCenterNorm, p, &pixelData);
-        *imgPtr = pixelData;
     }
+    *imgPtr = pixelData;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
