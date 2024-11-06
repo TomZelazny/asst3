@@ -432,9 +432,10 @@ __global__ void kernelRenderCircles() {
 
 __global__ void kernelRenderPixels() {
     int numCircles = cuConstRendererParams.numCircles;
-    extern __shared__ float3 sharedPositions[numCircles];
-    extern __shared__ float sharedRadii[numCircles];
-    extern __shared__ float3 sharedColors[numCircles];
+    extern __shared__ float sharedMemory[];
+    float3* sharedPositions = (float3*)sharedMemory;
+    float* sharedRadii = (float*)&sharedPositions[cuConstRendererParams.numCircles];
+    float3* sharedColors = (float3*)&sharedRadii[cuConstRendererParams.numCircles];
 
     int pixelX = blockIdx.x * blockDim.x + threadIdx.x;
     int pixelY = blockIdx.y * blockDim.y + threadIdx.y;
