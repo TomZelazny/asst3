@@ -462,14 +462,14 @@ __global__ void kernelRenderPixels() {
     for(int i = (blockDim.x * threadIdx.y) + blockIdx.x; i < cuConstRendererParams.numCircles; i += blockDim.x * blockDim.y) {
         int index3 = 3 * i;
         float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
-        float rad = cuConstRendererParams.radius[i];
+        // float rad = cuConstRendererParams.radius[i];
         
-        if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
-            sharedPositions[i] = p;
-            sharedRadii[i] = rad;
-            sharedColors[i] = *(float3*)(&cuConstRendererParams.color[index3]);
-            relevant_circles_count++;
-        }
+        // if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
+        //     sharedPositions[i] = p;
+        //     sharedRadii[i] = rad;
+        //     sharedColors[i] = *(float3*)(&cuConstRendererParams.color[index3]);
+        //     relevant_circles_count++;
+        // }
 
     }
     __syncthreads();
