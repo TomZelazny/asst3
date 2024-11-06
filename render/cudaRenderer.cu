@@ -452,27 +452,27 @@ __global__ void kernelRenderPixels() {
     float2 pixelCenterNorm = make_float2(invWidth * (static_cast<float>(pixelX) + 0.5f),
                                         invHeight * (static_cast<float>(pixelY) + 0.5f));
 
-    // int left = (blockIdx.x * blockDim.x)*invWidth;
-    // int right = (left + blockDim.x + 1)*invWidth;
-    // int top = (blockIdx.y * blockDim.y)*invHeight;
-    // int bottom = (top + blockDim.y + 1)*invHeight;
+    int left = (blockIdx.x * blockDim.x)*invWidth;
+    int right = (left + blockDim.x + 1)*invWidth;
+    int top = (blockIdx.y * blockDim.y)*invHeight;
+    int bottom = (top + blockDim.y + 1)*invHeight;
 
-    // int relevant_circles_count = 0;
+    int relevant_circles_count = 0;
 
-    // for(int i = (blockDim.x * threadIdx.y) + blockIdx.x; i < cuConstRendererParams.numCircles; i += blockDim.x * blockDim.y) {
-    //     int index3 = 3 * i;
-    //     float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
-    //     float rad = cuConstRendererParams.radius[i];
+    for(int i = (blockDim.x * threadIdx.y) + blockIdx.x; i < cuConstRendererParams.numCircles; i += blockDim.x * blockDim.y) {
+        int index3 = 3 * i;
+        float3 p = *(float3*)(&cuConstRendererParams.position[index3]);
+        float rad = cuConstRendererParams.radius[i];
         
-    //     if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
-    //         sharedPositions[relevant_circles_count] = p;
-    //         sharedRadii[relevant_circles_count] = rad;
-    //         sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
-    //         relevant_circles_count++;
-    //     }
+        if(circleInBoxConservative(p.x, p.y, rad, left, right, top, bottom) == 0) {
+            sharedPositions[relevant_circles_count] = p;
+            sharedRadii[relevant_circles_count] = rad;
+            sharedColors[relevant_circles_count] = *(float3*)(&cuConstRendererParams.color[index3]);
+            relevant_circles_count++;
+        }
 
-    // }
-    // __syncthreads();
+    }
+    __syncthreads();
     
     // make a local copy of the pixel color
     float4 pixelData = *imgPtr;
